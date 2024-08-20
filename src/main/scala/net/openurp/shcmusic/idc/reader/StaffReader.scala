@@ -25,7 +25,7 @@ import java.time.LocalDate
 class StaffReader(token: String, endPoint: String) extends GraphDataReader(token, endPoint) {
 
   def read(): collection.Seq[StaffData] = {
-    val rows = readTable("V_JZG_FOR_MIS", "ZGH XM XB CSRQ SFZJH ZJH XKSDM XKSMC ZZMMDM SJH DQZTDM DQZTMC DZXX JZGLBDM")
+    val rows = readTable("V_JZG_FOR_MIS", "ZGH XM XB CSRQ SFZJH ZJH XKSDM XKSMC ZZMMDM SJH DQZTDM DQZTMC DZXX JZGLBDM LXSJ LXRQ XWDM XWMC")
     val datas = Collections.newBuffer[StaffData]
     val iter = rows.iterator()
     while (iter.hasNext) {
@@ -45,12 +45,24 @@ class StaffReader(token: String, endPoint: String) extends GraphDataReader(token
       data.statusName = getString(n, "DQZTMC")
       data.staffTypeCode = getString(n, "JZGLBDM")
       data.email = getString2(n, "DZXX")
+      data.beginOn = getDate2(n, "LXSJ")
+      data.endOn = getDate2(n, "LXRQ")
+      data.degreeCode = getString2(n, "XWDM")
+      data.degreeName = getString2(n, "XWMC")
+
+      if (data.degreeCode.contains("0") || data.degreeName.contains("无学位")) {
+        data.degreeCode = None
+        data.degreeName = None
+      }
 
       if (data.endOn.isEmpty && Set("离退休", "去世", "离校", "不报到").contains(data.statusName)) {
         data.endOn = Some(LocalDate.now.minusDays(1))
       }
-      if (null != data.departCode) {
+      if (null == data.departCode) {
+        logger.warn(s"忽略教职工 ${data.code}(${data.name} ${data.statusName}) 缺少部门信息")
+      } else {
         datas.addOne(data)
+
       }
     }
     datas

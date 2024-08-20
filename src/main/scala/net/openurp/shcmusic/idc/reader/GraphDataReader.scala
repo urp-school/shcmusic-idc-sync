@@ -46,8 +46,8 @@ abstract class GraphDataReader(token: String, endPoint: String) extends Logging 
 
   def getDate2(data: ju.Map[String, _], path: String): Option[LocalDate] = {
     val dateStr = getString(data, path)
-    if (null == dateStr || dateStr.isEmpty) None else Some(LocalDate.parse(dateStr.substring(0, 10)))
-  }
+      if (null == dateStr || dateStr.isEmpty) None else Some(LocalDate.parse(dateStr.substring(0, 10)))
+    }
 
   def getString(data: ju.Map[String, _], path: String): String = {
     data.get(path).asInstanceOf[String]

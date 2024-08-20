@@ -17,13 +17,14 @@
 
 package net.openurp.shcmusic.idc
 
-import net.openurp.shcmusic.idc.reader.{DepartReader, StaffReader, StaffTitleReader}
+import net.openurp.shcmusic.idc.reader.{DepartReader, StaffDegreeReader, StaffReader, StaffTitleReader}
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
 import org.beangle.data.dao.EntityDao
 import org.openurp.base.hr.model.{Staff, StaffTitle}
 import org.openurp.base.model.{Department, School}
+import org.openurp.code.edu.model.{Degree, DegreeLevel, EducationDegree}
 import org.openurp.code.hr.model.{StaffType, WorkStatus}
 import org.openurp.code.job.model.ProfessionalTitle
 import org.openurp.code.person.model.{Gender, IdType, PoliticalStatus}
@@ -69,7 +70,10 @@ class SyncService(entityDao: EntityDao, config: Oauth2Config, endPoint: String) 
       val politicalStatuses = entityDao.getAll(classOf[PoliticalStatus]).map(x => (x.code, x)).toMap
       val workstatuses = entityDao.getAll(classOf[WorkStatus]).map(x => (x.name, x)).toMap
       val staffTypes = entityDao.getAll(classOf[StaffType]).map(x => (x.code, x)).toMap
+      var degrees = entityDao.getAll(classOf[Degree]).map(x => (x.code, x)).toMap
+      val degreeLevels = entityDao.getAll(classOf[DegreeLevel]).map(x => (x.name, x)).toMap
       val defaultStaffType = entityDao.getAll(classOf[StaffType]).find(_.code == "1").get //管理职务人员
+
       val staffMap = Collections.newMap[String, Staff]
       staffs foreach { s =>
         val errors = Collections.newBuffer[String]
@@ -84,8 +88,7 @@ class SyncService(entityDao: EntityDao, config: Oauth2Config, endPoint: String) 
         }
         if (s.beginOn.nonEmpty) staff.beginOn = s.beginOn.get
         if (s.endOn.nonEmpty) staff.endOn = s.endOn
-        //FIXME
-        //update begin_on and endOn
+
         staff.name = s.name
         if (staffTypes.contains(s.staffTypeCode)) {
           staff.staffType = staffTypes(s.staffTypeCode)
@@ -122,6 +125,28 @@ class SyncService(entityDao: EntityDao, config: Oauth2Config, endPoint: String) 
             staff.status = workstatuses(s.statusName)
           } else {
             errors.addOne(s"不能识别的在职状态:${s.statusName} 代码:${s.statusCode}")
+          }
+        }
+        s.degreeCode foreach { degreeCode =>
+          if (degrees.contains(degreeCode)) {
+            staff.degree = degrees.get(degreeCode)
+          } else {
+            //create a new degree code
+            val degree = new Degree()
+            degree.code = degreeCode
+            degree.name = s.degreeName.get
+            degree.beginOn = LocalDate.now()
+            degree.updatedAt = Instant.now
+            if (s.getDegreeLevelName.isEmpty) {
+              println(s.getDegreeLevelName)
+            }
+            if (!degreeLevels.contains(s.getDegreeLevelName.get)) {
+              println(s.getDegreeLevelName)
+            }
+            degree.level = degreeLevels(s.getDegreeLevelName.get)
+            entityDao.saveOrUpdate(degree)
+            staff.degree = Some(degree)
+            degrees = entityDao.getAll(classOf[Degree]).map(x => (x.code, x)).toMap
           }
         }
         s.mobile foreach { m => staff.mobile = Some(m) }
@@ -164,6 +189,31 @@ class SyncService(entityDao: EntityDao, config: Oauth2Config, endPoint: String) 
           } else {
             staff.title = None
           }
+        }
+      }
+      //同步学历学位信息
+      val eduDegrees = new StaffDegreeReader(token, endPoint).read()
+      val educationDegrees = entityDao.getAll(classOf[EducationDegree]).map(x => (x.code, x)).toMap
+
+      eduDegrees foreach { t =>
+        staffMap.get(t.code) foreach { staff =>
+          if (t.lastEduDegree) {
+            if (educationDegrees.contains(t.eduDegreeCode)) {
+              staff.educationDegree = educationDegrees.get(t.eduDegreeCode)
+            } else {
+              logger.error(s"不能识别的学历代码:${t.eduDegreeCode} 工号:${staff.code}")
+            }
+          }
+          t.degreeLevelName foreach { degreeLevelName =>
+            if (t.lastDegree) {
+              if (degreeLevels.contains(degreeLevelName)) {
+                staff.degreeLevel = degreeLevels.get(degreeLevelName)
+              } else {
+                logger.error(s"不能识别的学位层次名称:${degreeLevelName} 工号:${staff.code}")
+              }
+            }
+          }
+          entityDao.saveOrUpdate(staff)
         }
       }
     }

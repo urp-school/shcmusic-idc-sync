@@ -34,8 +34,25 @@ class StaffData {
   var statusCode: String = _
   var statusName: String = _
   var staffTypeCode: String = _
+  var degreeCode: Option[String] = None
+  var degreeName: Option[String] = None
   var beginOn: Option[LocalDate] = None
   var endOn: Option[LocalDate] = None
+
+  def getDegreeLevelName: Option[String] = {
+    if (degreeName.isDefined) {
+      if (degreeName.get.contains("学士")) {
+        return Some("学士")
+      } else if (degreeName.get.contains("硕士")) {
+        return Some("硕士")
+      } else if (degreeName.get.contains("博士")) {
+        return Some("博士")
+      } else {
+        return None
+      }
+    }
+    None
+  }
 
   override def toString: String = {
     s"Staff(code=$code, name=$name, genderName=$genderName, idTypeName=$idTypeName, idNumber=$idNumber," +

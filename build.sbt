@@ -1,7 +1,7 @@
 import org.openurp.parent.Settings.*
 
 ThisBuild / organization := "net.openurp.shcmusic"
-ThisBuild / version := "0.0.1"
+ThisBuild / version := "0.0.2-SNAPSHOT"
 
 ThisBuild / scmInfo := Some(
   ScmInfo(

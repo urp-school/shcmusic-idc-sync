@@ -59,7 +59,7 @@ class StaffReader(token: String, endPoint: String) extends GraphDataReader(token
         data.endOn = Some(LocalDate.now.minusDays(1))
       }
       if (null == data.departCode) {
-        logger.warn(s"忽略教职工 ${data.code}(${data.name} ${data.statusName}) 缺少部门信息")
+        //logger.warn(s"忽略教职工 ${data.code}(${data.name} ${data.statusName}) 缺少部门信息")
       } else {
         datas.addOne(data)
 

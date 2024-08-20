@@ -49,8 +49,7 @@ class SyncService(entityDao: EntityDao, config: Oauth2Config, endPoint: String) 
           depart.updatedAt = Instant.now
         }
         depart.name = d.name
-        if d.enabled then depart.endOn = null
-        else {
+        if !d.enabled then {
           if null == depart.endOn then depart.endOn = Some(LocalDate.now)
         }
         d.parentCode foreach { c =>
@@ -60,7 +59,7 @@ class SyncService(entityDao: EntityDao, config: Oauth2Config, endPoint: String) 
         entityDao.saveOrUpdate(depart)
         departMap.put(depart.code, depart)
       }
-
+      logger.info(s"同步了${departs.size}个部门")
       //重新生成部门的排序
       reindexDepart(school)
       //同步教职工
@@ -159,6 +158,7 @@ class SyncService(entityDao: EntityDao, config: Oauth2Config, endPoint: String) 
           logger.error(errors.mkString(","))
         }
       }
+      logger.info(s"同步了${staffs.size}个教职工")
       //同步职称
       val titles = new StaffTitleReader(token, endPoint).read().groupBy(_.code)
       val professionalTitles = entityDao.getAll(classOf[ProfessionalTitle]).map(x => (x.code, x)).toMap
@@ -191,6 +191,7 @@ class SyncService(entityDao: EntityDao, config: Oauth2Config, endPoint: String) 
           }
         }
       }
+      logger.info(s"同步了${titles.size}个教职工职称")
       //同步学历学位信息
       val eduDegrees = new StaffDegreeReader(token, endPoint).read()
       val educationDegrees = entityDao.getAll(classOf[EducationDegree]).map(x => (x.code, x)).toMap
@@ -216,6 +217,9 @@ class SyncService(entityDao: EntityDao, config: Oauth2Config, endPoint: String) 
           entityDao.saveOrUpdate(staff)
         }
       }
+      logger.info(s"同步了${eduDegrees.size}个教职工学历学位信息")
+      logger.info("同步结束")
+      System.exit(0)
     }
   }
 

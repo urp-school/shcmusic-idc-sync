@@ -49,9 +49,9 @@ object SyncMain extends Logging {
       DaoHelper.main { (entityDao: EntityDao) =>
         Oauth2Helper.fetchAccessToken(config) foreach { token =>
           val dataSource = Container.ROOT.getBean(classOf[DataSource]).get
-          //new DepartSyncService(entityDao).sync(token, endPoint)
-          //new StaffSyncService(entityDao).sync(token, endPoint)
-          //new StdContactSyncService(entityDao).sync(token, endPoint)
+          new DepartSyncService(entityDao).sync(token, endPoint)
+          new StaffSyncService(entityDao).sync(token, endPoint)
+          new StdContactSyncService(entityDao).sync(token, endPoint)
           val css = new UserContactSyncService(dataSource)
           css.init()
           css.sync()

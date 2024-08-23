@@ -17,13 +17,15 @@
 
 package net.openurp.shcmusic.idc
 
+import org.beangle.cdi.Container
 import org.beangle.commons.logging.Logging
 import org.beangle.data.dao.EntityDao
 import org.beangle.ems.app.EmsApp
 
 import java.io.FileInputStream
+import javax.sql.DataSource
 
-object StaffSyncMain extends Logging {
+object SyncMain extends Logging {
 
   def main(args: Array[String]): Unit = {
     var accessTokenUrl: String = null
@@ -45,10 +47,17 @@ object StaffSyncMain extends Logging {
     if (null != accessTokenUrl && null != clientId && null != clientSecret && null != endPoint) {
       val config = Oauth2Config(accessTokenUrl, clientId, clientSecret)
       DaoHelper.main { (entityDao: EntityDao) =>
-        val sync = new SyncService(entityDao, config, endPoint)
-        sync.sync()
+        Oauth2Helper.fetchAccessToken(config) foreach { token =>
+          val dataSource = Container.ROOT.getBean(classOf[DataSource]).get
+          //new DepartSyncService(entityDao).sync(token, endPoint)
+          //new StaffSyncService(entityDao).sync(token, endPoint)
+          //new StdContactSyncService(entityDao).sync(token, endPoint)
+          val css = new UserContactSyncService(dataSource)
+          css.init()
+          css.sync()
+        }
       }
-    }else{
+    } else {
       logger.error("Graphql config not found")
     }
   }

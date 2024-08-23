@@ -23,11 +23,11 @@ ThisBuild / description := "Shcmusic IDC Sync"
 ThisBuild / homepage := Some(url("http://openurp.github.io/urp-school/index.html"))
 
 val openurp_start_task = "org.openurp.starter" % "openurp-starter-task" % "0.3.39"
-
+val openurp_std_api = "org.openurp.std" % "openurp-std-api" % "0.41.2"
 lazy val web = (project in file("."))
   .settings(
     name := "shcmusic-idc-sync",
     common,
-    Compile / mainClass := Some("net.openurp.shcmusic.idc.StaffSyncMain"),
-    libraryDependencies ++= Seq(openurp_start_task)
+    Compile / mainClass := Some("net.openurp.shcmusic.idc.SyncMain"),
+    libraryDependencies ++= Seq(openurp_start_task, openurp_std_api)
   )
